@@ -1,10 +1,17 @@
 import React, { useState } from "react";
 import HeadComponent from "../components/Head";
 import * as Bip39 from "bip39";
-import { Keypair } from "@solana/web3.js";
+import {
+  Keypair,
+  Connection,
+  clusterApiUrl,
+  LAMPORTS_PER_SOL,
+} from "@solana/web3.js";
+const NETWORK = "devnet";
 export default function Home() {
   const [mnemonic, setMnemonic] = useState(null);
   const [account, setAccount] = useState(null);
+  const [balance, setBalance] = useState(null);
 
   const generateWallet = () => {
     const generatedMnemonic = Bip39.generateMnemonic();
@@ -33,6 +40,24 @@ export default function Home() {
     // @ts-ignore
     setAccount(importedAccount);
   };
+
+  const refreshBalance = async () => {
+    try {
+      const NETWORK = "devnet";
+      const connection = new Connection(clusterApiUrl(NETWORK), "confirmed");
+      // @ts-ignore
+      const publicKey = account.publicKey;
+
+      let balance = await connection.getBalance(publicKey);
+      balance = balance / LAMPORTS_PER_SOL;
+      console.log("balance", balance);
+      // @ts-ignore
+      setBalance(balance);
+    } catch (error) {
+      console.log("error", error);
+    }
+  };
+
   return (
     <div>
       <HeadComponent />
@@ -51,13 +76,15 @@ export default function Home() {
             My Wallet
           </h3>
           {account && (
-            <div className="my-6 text-indigo-600 font-bold">
-              アドレス:{" "}
-              {
-                // @ts-ignore
-                account.publicKey.toString()
-              }
-            </div>
+            <>
+              <div className="my-6 text-indigo-600 font-bold">
+                アドレス: {account.publicKey.toString()}
+              </div>
+              <div className="my-6 font-bold">ネットワーク: {NETWORK}</div>
+              {typeof balance === "number" && (
+                <div className="my-6 font-bold">💰 残高: {balance} SOL</div>
+              )}
+            </>
           )}
         </div>
 
@@ -114,6 +141,14 @@ export default function Home() {
           <h2 className="p-2 border-dotted border-l-4 border-l-indigo-400">
             STEP3: 残高を取得する
           </h2>
+          {account && (
+            <button
+              className="p-2 my-6 text-white bg-indigo-500 focus:ring focus:ring-indigo-300 rounded-lg cursor-pointer"
+              onClick={refreshBalance}
+            >
+              残高を取得
+            </button>
+          )}
         </div>
 
         <hr className="my-6" />
